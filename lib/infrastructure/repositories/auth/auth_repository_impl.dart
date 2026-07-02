@@ -1,5 +1,6 @@
 
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:gestao_financeira/domain/auth/dto/login_dto.dart';
 import 'package:gestao_financeira/domain/auth/dto/register_dto.dart';
 import 'package:gestao_financeira/domain/auth/entities/session_entity.dart';
@@ -14,18 +15,24 @@ import 'package:gestao_financeira/infrastructure/mappers/auth/me_action.dart';
 
 class AuthRepositoryImpl implements IAuthRepository {
   @override
-  Future<UserEntity> register(RegisterRequest data) async {
-    try {
-      final model = await registerAction(data);
-      return AuthMapper.toUserEntity(model);
-    } on DioException catch (e) {
-      final err = normalizeHttpError(e);
-      if (err.statusCode == 409) {
-        throw EmailAlreadyExistsError(err.messages.join(', '));
-      }
-      rethrow;
+  @override
+Future<UserEntity> register(RegisterRequest data) async {
+  try {
+    final model = await registerAction(data);
+    return AuthMapper.toUserEntity(model);
+  } on DioException catch (e) {
+    debugPrint('❌ DioException: ${e.message}');
+    debugPrint('❌ Response: ${e.response?.data}');
+    debugPrint('❌ Status: ${e.response?.statusCode}');
+    debugPrint('❌ URL: ${e.requestOptions.uri}');
+
+    final err = normalizeHttpError(e);
+    if (err.statusCode == 409) {
+      throw EmailAlreadyExistsError(err.messages.join(', '));
     }
+    rethrow;
   }
+}
 
   @override
   Future<SessionEntity> login(LoginRequest data) async {

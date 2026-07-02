@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:gestao_financeira/app/router.dart';
+import 'package:gestao_financeira/presentation/theme/app_theme.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-void main() {
-  runApp(const MainApp());
-}
+void main() => runApp(const ProviderScope(child: App()));
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class App extends ConsumerWidget {
+  const App({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
+      theme: AppTheme.light,
+      routerConfig: ref.watch(goRouterProvider),
     );
   }
 }
