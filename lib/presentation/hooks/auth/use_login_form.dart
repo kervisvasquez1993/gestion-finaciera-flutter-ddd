@@ -10,16 +10,20 @@ class UseLoginFormResult {
   final TextEditingController passwordController;
   final GlobalKey<FormState> formKey;
   final bool isLoading;
+  final bool obscurePassword;
   final String? errorMessage;
   final VoidCallback onSubmit;
+  final VoidCallback togglePasswordVisibility;
 
   const UseLoginFormResult({
     required this.emailController,
     required this.passwordController,
     required this.formKey,
     required this.isLoading,
+    required this.obscurePassword,
     required this.errorMessage,
     required this.onSubmit,
+    required this.togglePasswordVisibility,
   });
 }
 
@@ -28,15 +32,17 @@ UseLoginFormResult useLoginForm(WidgetRef ref, {required VoidCallback onSuccess}
   final passwordController = useTextEditingController();
   final formKey = useMemoized(() => GlobalKey<FormState>());
   final errorMessage = useState<String?>(null);
+  final obscurePassword = useState(true);
 
   final sessionState = ref.watch(sessionNotifierProvider);
   final isLoading = sessionState.isLoading;
 
-  // reacciona cuando la mutation resuelve, similar a onSuccess/onError de useMutation
   useEffect(() {
     sessionState.whenOrNull(
       data: (user) {
-        if (user != null) onSuccess();
+        if (user != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => onSuccess());
+        }
       },
       error: (err, _) {
         if (err is InvalidCredentialsError) {
@@ -66,7 +72,9 @@ UseLoginFormResult useLoginForm(WidgetRef ref, {required VoidCallback onSuccess}
     passwordController: passwordController,
     formKey: formKey,
     isLoading: isLoading,
+    obscurePassword: obscurePassword.value,
     errorMessage: errorMessage.value,
     onSubmit: handleSubmit,
+    togglePasswordVisibility: () => obscurePassword.value = !obscurePassword.value,
   );
 }

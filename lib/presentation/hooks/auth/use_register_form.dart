@@ -11,8 +11,10 @@ class UseRegisterFormResult {
   final TextEditingController passwordController;
   final GlobalKey<FormState> formKey;
   final bool isLoading;
+  final bool obscurePassword;
   final String? errorMessage;
   final VoidCallback onSubmit;
+  final VoidCallback togglePasswordVisibility;
 
   const UseRegisterFormResult({
     required this.nameController,
@@ -20,8 +22,10 @@ class UseRegisterFormResult {
     required this.passwordController,
     required this.formKey,
     required this.isLoading,
+    required this.obscurePassword,
     required this.errorMessage,
     required this.onSubmit,
+    required this.togglePasswordVisibility,
   });
 }
 
@@ -31,25 +35,41 @@ UseRegisterFormResult useRegisterForm(WidgetRef ref, {required VoidCallback onSu
   final passwordController = useTextEditingController();
   final formKey = useMemoized(() => GlobalKey<FormState>());
   final errorMessage = useState<String?>(null);
+  final obscurePassword = useState(true);
 
   final mutationState = ref.watch(registerMutationProvider);
   final isLoading = mutationState.isLoading;
 
-  useEffect(() {
-    mutationState.whenOrNull(
-      data: (user) {
-        if (user != null) onSuccess();
-      },
-      error: (err, _) {
-        if (err is EmailAlreadyExistsError) {
-          errorMessage.value = err.message;
-        } else {
-          errorMessage.value = 'Erro ao criar conta. Tente novamente.';
-        }
-      },
-    );
-    return null;
-  }, [mutationState]);
+ useEffect(() {
+  mutationState.whenOrNull(
+    data: (user) {
+      if (user != null) {
+        nameController.clear();
+        emailController.clear();
+        passwordController.clear();
+        formKey.currentState?.reset();
+
+        Future(() {
+          ref.read(registerMutationProvider.notifier).state = const AsyncData(null);
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) => onSuccess());
+      }
+    },
+    error: (err, _) {
+      if (err is EmailAlreadyExistsError) {
+        errorMessage.value = err.message;
+      } else {
+        errorMessage.value = 'Erro ao criar conta. Tente novamente.';
+      }
+
+      Future(() {
+        ref.read(registerMutationProvider.notifier).state = const AsyncData(null);
+      });
+    },
+  );
+  return null;
+}, [mutationState]);
 
   void handleSubmit() {
     if (!(formKey.currentState?.validate() ?? false)) return;
@@ -70,7 +90,9 @@ UseRegisterFormResult useRegisterForm(WidgetRef ref, {required VoidCallback onSu
     passwordController: passwordController,
     formKey: formKey,
     isLoading: isLoading,
+    obscurePassword: obscurePassword.value,
     errorMessage: errorMessage.value,
     onSubmit: handleSubmit,
+    togglePasswordVisibility: () => obscurePassword.value = !obscurePassword.value,
   );
 }
